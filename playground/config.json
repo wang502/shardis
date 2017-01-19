@@ -1,0 +1,15 @@
+{
+"servers": [
+      {"name": "name1",
+       "host": "",
+       "port": "",
+       "db": ""
+      },
+      {"name": "name2",
+       "host": "",
+       "port": "",
+       "db": ""
+      }],
+"hash": "md5",
+"replicas": 128
+}
