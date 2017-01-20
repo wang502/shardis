@@ -1,13 +1,16 @@
 package shardis
 
 import (
-    "time"
-    "github.com/garyburd/redigo/redis"
+    "regexp"
+)
+
+var (
+    RegexFormat = "{.*}"
 )
 
 type Shardis struct {
     Nodes []string
-    Connections []*redis.Pool
+    Connections map[string]*Connection
     Ring *HashRing
 }
 
@@ -15,12 +18,12 @@ func New(config *Config) (*Shardis, error) {
 
     num_servers := len(config.Servers)
     nodes := make([]string, num_servers)
-    connections := make([]*redis.Pool, num_servers)
+    connections := make(map[string]*Connection)
     for i, server := range config.Servers {
         nodes[i] = server["name"]
 
-        conn := makeRedisPool(server["host"], "")
-        connections[i] = conn
+        conn := NewConnection(server["host"], "")
+        connections[server["name"]] = conn
 
     }
 
@@ -36,27 +39,35 @@ func New(config *Config) (*Shardis, error) {
             }, nil
 }
 
-// makeRedisPool creates new redis.Pool instance
-// given Redis server address and password
-func makeRedisPool(host string, password string) *redis.Pool {
-    pool := &redis.Pool{
-        MaxIdle: 5,
-        IdleTimeout: 240 * time.Second,
-        Dial: func () (redis.Conn, error) {
-              c, err := redis.Dial("tcp", host)
-              if err != nil {
-                  return c, nil
-              }
-              c.Do("AUTH", password)
+func (shard *Shardis) GetServer(key string) (*Connection) {
+    serverName := shard.GetServerName(key)
+    return shard.Connections[serverName]
+}
 
-              /* the is needed only if "gores" is configured in Redis's configuration file redis.conf */
-              //c.Do("SELECT", "gores")
-              return c, nil
-            },
-        TestOnBorrow: func(c redis.Conn, t time.Time) error {
-            _, err := c.Do("PING")
-            return err
-        },
+func (shard *Shardis) GetServerName(key string) (string) {
+    re := regexp.MustCompile(RegexFormat)
+    tag := re.FindString(key)
+    if len(tag) == 0 {
+        // for key without tag enclosed by {}, ex, "foobar"
+        // directly hash the key
+        tag = key
     }
-    return pool
+    name := shard.Ring.GetNode(tag[1:len(tag)-1])
+    return name
+}
+
+/*  Redis methods for Shardis */
+func (shard *Shardis) Set(key string, value interface{}) (error) {
+    conn := shard.GetServer(key)
+    err := conn.Set(key, value)
+    return err
+}
+
+func (shard *Shardis) Get(key string) (interface{}, error){
+    conn := shard.GetServer(key)
+    value, err := conn.Get(key)
+    if err != nil {
+        return nil, err
+    }
+    return value, nil
 }

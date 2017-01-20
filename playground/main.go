@@ -22,4 +22,13 @@ func main(){
 
     hashRing, _ := shardis.NewHashRing([]string{"name1", "name2"}, "md5", 10)
     log.Println(hashRing.Ring)
+
+    hashRing.RemoveNode("name1")
+    log.Println(hashRing.Ring)
+
+    node := hashRing.GetNode("name2:9")
+    log.Println(node)
+
+    serverName := shard.GetServerName("abcd{name2:9}efg")
+    log.Println(serverName)
 }
