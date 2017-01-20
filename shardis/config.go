@@ -8,12 +8,14 @@ import (
     "log"
 )
 
+// Config represents the configuration of Shardis
 type Config struct {
     Servers []map[string]string  `json:"servers"`
     HashMethod string `json:"hash"`
     Replicas int `json:"replicas"`
 }
 
+// Read config.json and create corresponding Config instance
 func InitConfig(confPath string) (*Config, error) {
     bytes, err := ioutil.ReadFile(confPath)
     log.Println(string(bytes))

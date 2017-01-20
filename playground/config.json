@@ -1,7 +1,7 @@
 {
 "servers": [
       {"name": "name1",
-       "host": "",
+       "host": "127.0.0.1:6379",
        "port": "",
        "db": ""
       },
@@ -11,5 +11,5 @@
        "db": ""
       }],
 "hash": "md5",
-"replicas": 128
+"replicas": 10
 }

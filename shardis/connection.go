@@ -8,11 +8,12 @@ import (
     "github.com/garyburd/redigo/redis"
 )
 
-// Connection represents a client to Redis server
+// Connection represents the connection to a single Redis instance
 type Connection struct {
     Pool *redis.Pool
 }
 
+// Create Connection instance
 func NewConnection(host string, password string) (*Connection) {
     pool := makeRedisPool(host, password)
     return &Connection{
@@ -47,6 +48,7 @@ func makeRedisPool(host string, password string) (*redis.Pool) {
 
 /*  Redis methods for single connection*/
 
+// Redis SET on single instance
 func (conn *Connection) Set(key string, value interface{}) (error) {
     cn := conn.Pool.Get()
     if cn == nil {
@@ -55,20 +57,44 @@ func (conn *Connection) Set(key string, value interface{}) (error) {
 
     _, err := cn.Do("SET", key, value)
     if err != nil {
-        return errors.New(fmt.Sprintf("error set k/v: %s", err.Error()))
+        return errors.New(fmt.Sprintf("error SET k/v: %s", err.Error()))
     }
     return nil
 }
 
+// Redis GET on single instance
 func (conn *Connection) Get(key string) (interface{}, error) {
     cn := conn.Pool.Get()
     if cn == nil {
         return nil, errors.New("error getting pool connection")
     }
 
-    data, err := cn.Do("GET", key)
-    if data == nil || err != nil {
-        return nil, errors.New("error Get on key")
+    value, err := cn.Do("GET", key)
+    if value == nil || err != nil {
+        return nil, errors.New("error GET on key")
     }
-    return data, nil
+
+    switch value.(type){
+    case []byte:
+        value = string(value.([]byte))
+        return value, nil
+    case byte:
+        value, err = redis.Bytes(value, err)
+        return value, err
+    }
+    return value, nil
+}
+
+// Redis RPUSH on single instance
+func (conn *Connection) Rpush(key string, value interface{}) (error) {
+    cn := conn.Pool.Get()
+    if cn == nil {
+        return errors.New("error getting pool connection")
+    }
+
+    _, err := cn.Do("RPUSH", key, value)
+    if err != nil {
+        return errors.New("error RPUSH on key")
+    }
+    return nil
 }

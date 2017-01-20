@@ -3,6 +3,7 @@ package main
 import (
     "flag"
     "log"
+
     "github.com/wang502/shardis/shardis"
 )
 
@@ -31,4 +32,24 @@ func main(){
 
     serverName := shard.GetServerName("abcd{name2:9}efg")
     log.Println(serverName)
+
+    err = shard.Set("major{name1:1}", "cs")
+    if err != nil {
+        log.Println(err.Error())
+    }
+
+    err = shard.Set("year{name1:2}", 4)
+    if err != nil {
+        log.Println(err.Error())
+    }
+    major, err := shard.Get("major{name1:1}")
+    log.Printf("major: %s\n", major)
+
+    year, err := shard.Get("year{name1:2}")
+    log.Printf("year: %s\n", year)
+
+    err = shard.Rpush("classes{name1:1}", 400)
+    if err != nil {
+        log.Println(err.Error())
+    }
 }
