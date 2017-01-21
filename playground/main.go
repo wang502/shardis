@@ -46,10 +46,20 @@ func main(){
     log.Printf("major: %s\n", major)
 
     year, err := shard.Get("year{name1:2}")
-    log.Printf("year: %s\n", year)
+    log.Printf("year: %d\n", year)
 
-    err = shard.Rpush("classes{name1:1}", 400)
+    /* */
+    err = shard.Rpush("upvotes{name1:1}", 400)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
     }
+    uv, err := shard.Lpop("upvotes{name1:1}")
+    log.Printf("upvote: %d\n", uv)
+
+    err = shard.Rpush("upvotes{name1:1}", "upvotes")
+    if err != nil {
+        log.Println(err)
+    }
+    uv1, err := shard.Lpop("upvotes{name1:1}")
+    log.Printf("upvote: %s\n", uv1)
 }

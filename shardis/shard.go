@@ -99,3 +99,17 @@ func (shard *Shardis) Rpush(key string, value interface{}) (error) {
     err := conn.Rpush(key, value)
     return err
 }
+
+// Redis LPOP
+func (shard *Shardis) Lpop(key string) (interface{}, error) {
+    conn := shard.GetServer(key)
+    if conn == nil {
+        return nil, errors.New("no server mapped to given key")
+    }
+
+    value, err := conn.Lpop(key)
+    if err != nil {
+        return nil, err
+    }
+    return value, nil
+}
