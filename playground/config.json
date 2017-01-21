@@ -3,12 +3,14 @@
       {"name": "name1",
        "host": "127.0.0.1:6379",
        "port": "",
-       "db": ""
+       "db": "",
+       "block_timeout": 0
       },
       {"name": "name2",
        "host": "",
        "port": "",
-       "db": ""
+       "db": "",
+       "block_timeout": 0
       }],
 "hash": "md5",
 "replicas": 10

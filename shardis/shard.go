@@ -23,10 +23,10 @@ func New(config *Config) (*Shardis, error) {
     nodes := make([]string, num_servers)
     connections := make(map[string]*Connection)
     for i, server := range config.Servers {
-        nodes[i] = server["name"]
+        nodes[i] = server["name"].(string)
 
-        conn := NewConnection(server["host"], "")
-        connections[server["name"]] = conn
+        conn := NewConnection(server["host"].(string), "", int(server["block_timeout"].(float64)))
+        connections[server["name"].(string)] = conn
     }
 
     ring, err := NewHashRing(nodes, config.HashMethod, config.Replicas)
@@ -89,6 +89,17 @@ func (shard *Shardis) Get(key string) (interface{}, error){
     return value, nil
 }
 
+// Redis LPUSH
+func (shard *Shardis) Lpush(key string, value interface{}) (error) {
+    conn := shard.GetServer(key)
+    if conn == nil {
+        return errors.New("no server mapped to given key")
+    }
+
+    err := conn.Lpush(key, value)
+    return err
+}
+
 // Redis RPUSH
 func (shard *Shardis) Rpush(key string, value interface{}) (error) {
     conn := shard.GetServer(key)
@@ -108,7 +119,35 @@ func (shard *Shardis) Lpop(key string) (interface{}, error) {
     }
 
     value, err := conn.Lpop(key)
-    if err != nil {
+    if err != nil || value == nil {
+        return nil, err
+    }
+    return value, nil
+}
+
+// Redis LPOP
+func (shard *Shardis) Rpop(key string) (interface{}, error) {
+    conn := shard.GetServer(key)
+    if conn == nil {
+        return nil, errors.New("no server mapped to given key")
+    }
+
+    value, err := conn.Rpop(key)
+    if err != nil || value == nil {
+        return nil, err
+    }
+    return value, nil
+}
+
+// Redis BLPOP
+func (shard *Shardis) Blpop(key string) (interface{}, error) {
+    conn := shard.GetServer(key)
+    if conn == nil {
+        return nil, errors.New("no server mapped to given key")
+    }
+
+    value, err := conn.Blpop(key)
+    if err != nil || value == nil {
         return nil, err
     }
     return value, nil

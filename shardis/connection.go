@@ -13,14 +13,16 @@ import (
 type Connection struct {
     Host string
     Pool *redis.Pool
+    BlockTimeout int
 }
 
 // Create Connection instance
-func NewConnection(host string, password string) (*Connection) {
+func NewConnection(host string, password string, blockTimeout int) (*Connection) {
     pool := makeRedisPool(host, password)
     return &Connection{
                 Host: host,
                 Pool: pool,
+                BlockTimeout: blockTimeout,
             }
 }
 
@@ -81,12 +83,34 @@ func (conn *Connection) Get(key string) (interface{}, error) {
     return value, nil
 }
 
+// Redis LPUSH on single instance
+func (conn *Connection) Lpush(key string, value interface{}) (error) {
+    cn := conn.Pool.Get()
+    if cn == nil {
+        return errors.New("error getting pool connection")
+    }
+
+    _, err := cn.Do("LPUSH", key, value)
+    if err != nil {
+        return fmt.Errorf("error LPUSH (%s) on host: %s", err, conn.Host)
+    }
+    return nil
+}
+
 // Redis RPUSH on single instance
 func (conn *Connection) Rpush(key string, value interface{}) (error) {
     cn := conn.Pool.Get()
     if cn == nil {
         return errors.New("error getting pool connection")
     }
+
+    /*
+    args := make([]interface{}, len(values) + 1)
+    args[0] = key
+    for i:=1; i < len(values)+1; i++ {
+        args[i] = values[i-1]
+    }
+    */
 
     _, err := cn.Do("RPUSH", key, value)
     if err != nil {
@@ -109,6 +133,41 @@ func (conn *Connection) Lpop(key string)  (interface{}, error) {
 
     value = convertType(value, err)
     return value, nil
+}
+
+// Redis LPOP on single instance
+func (conn *Connection) Rpop(key string)  (interface{}, error) {
+    cn := conn.Pool.Get()
+    if cn == nil {
+        return nil, errors.New("error getting pool connection")
+    }
+
+    value, err := cn.Do("RPOP", key)
+    if value == nil || err != nil {
+        return nil, fmt.Errorf("error RPOP (%s) on host: %s", err, conn.Host)
+    }
+
+    value = convertType(value, err)
+    return value, nil
+}
+
+func (conn *Connection) Blpop(keys ...string) (interface{}, error) {
+    cn := conn.Pool.Get()
+    if cn == nil {
+      return nil, errors.New("error getting pool connection")
+    }
+
+    queueSlice := make([]interface{}, len(keys))
+    for i:=0; i<len(keys); i++ {
+        queueSlice[i] = keys
+    }
+    args := append(queueSlice, conn.BlockTimeout)
+    value, err := cn.Do("BLPOP", args...)
+
+    if value == nil || err != nil {
+        return nil, err
+    }
+    return convertType(value, err), nil
 }
 
 // Convert replied data([]byte) to correct type(int or string)

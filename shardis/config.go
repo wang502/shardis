@@ -10,7 +10,7 @@ import (
 
 // Config represents the configuration of Shardis
 type Config struct {
-    Servers []map[string]string  `json:"servers"`
+    Servers []map[string]interface{}  `json:"servers"`
     HashMethod string `json:"hash"`
     Replicas int `json:"replicas"`
 }
