@@ -4,7 +4,7 @@ import (
     "flag"
     "log"
 
-    "github.com/wang502/shardis/shardis"
+    "github.com/wang502/shardis"
 )
 
 func main(){

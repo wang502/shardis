@@ -159,7 +159,7 @@ func (conn *Connection) Blpop(keys ...string) (interface{}, error) {
 
     queueSlice := make([]interface{}, len(keys))
     for i:=0; i<len(keys); i++ {
-        queueSlice[i] = keys
+        queueSlice[i] = keys[i]
     }
     args := append(queueSlice, conn.BlockTimeout)
     value, err := cn.Do("BLPOP", args...)
